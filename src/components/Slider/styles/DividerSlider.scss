@@ -1,0 +1,11 @@
+.divider-slider {
+  --split-size: 8px;
+
+  background-color: rgba(black, 0.1);
+  width: var(--split-size);
+  height: var(--split-size);
+
+  &:hover {
+    background-color: rgba(black, 0.25);
+  }
+}

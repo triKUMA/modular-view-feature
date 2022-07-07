@@ -1,13 +1,4 @@
 .divider {
   width: 100%;
   height: 100%;
-}
-.divider > .slider {
-  --split-size: 8px;
-  background-color: rgba(0, 0, 0, 0.1);
-  width: var(--split-size);
-  height: var(--split-size);
-}
-.divider > .slider:hover {
-  background-color: rgba(0, 0, 0, 0.25);
 }/*# sourceMappingURL=Divider.css.map */

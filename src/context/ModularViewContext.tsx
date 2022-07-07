@@ -1,13 +1,14 @@
-import React, { createContext, ReactNode, useEffect, useState } from "react";
+import React, { createContext, ReactElement, useEffect, useState } from "react";
 import Divider, { DividerOrientation } from "../components/Divider/Divider";
 import { v4 as uuidV4 } from "uuid";
+import Counter from "../components/Counter/Counter";
 
 // The base data model of the modular view.
 interface View {
   id: string;
   orientation?: DividerOrientation;
-  child1?: View | ReactNode;
-  child2?: View | ReactNode;
+  child1?: View | ReactElement;
+  child2?: View | ReactElement;
 }
 
 interface AddChildDetails {
@@ -17,12 +18,12 @@ interface AddChildDetails {
 interface IModularViewContext {
   view: View;
   renderView: (
-    view: View | ReactNode | undefined,
+    view: View | ReactElement | undefined,
     parentOrientation?: DividerOrientation
-  ) => ReactNode;
+  ) => ReactElement | null;
   addChild: (
     dividerID: string,
-    element: ReactNode,
+    element: ReactElement,
     details?: AddChildDetails
   ) => void;
 }
@@ -34,7 +35,7 @@ export const ModularViewContext = createContext<IModularViewContext>({
 });
 
 interface ModularViewProps {
-  children: ReactNode;
+  children: ReactElement;
 }
 
 // A recursive function to search up an element's parent nodes to find a Divider element.
@@ -42,11 +43,11 @@ export const getDivider = (
   element: HTMLElement | null,
   previous?: HTMLElement
 ): { current: HTMLElement; child?: HTMLElement } | null => {
-  if (element === null || element.className.includes("slider")) {
+  if (element === null || element.classList.contains("divider-slider")) {
     return null;
   }
 
-  return element.className.includes("divider")
+  return element.classList.contains("divider")
     ? { current: element, child: previous }
     : getDivider(element.parentElement, element);
 };
@@ -60,7 +61,7 @@ export const ModularViewProvider = (props: ModularViewProps) => {
   // matching id.
   const findDivider = (
     dividerID: string,
-    view: View | ReactNode
+    view: View | ReactElement | null
   ): View | null => {
     if (!view || React.isValidElement(view)) {
       return null;
@@ -70,8 +71,8 @@ export const ModularViewProvider = (props: ModularViewProps) => {
       return view as View;
     }
 
-    const child1 = (view as View).child1;
-    const child2 = (view as View).child2;
+    const child1 = (view as View).child1 || null;
+    const child2 = (view as View).child2 || null;
 
     return findDivider(dividerID, child1) || findDivider(dividerID, child2);
   };
@@ -79,7 +80,7 @@ export const ModularViewProvider = (props: ModularViewProps) => {
   // Add a child element to a divider, creating a new split if necessary.
   const addChild = (
     dividerID: string,
-    element: ReactNode,
+    element: ReactElement,
     details?: AddChildDetails
   ): void => {
     const divider = findDivider(dividerID, view);
@@ -113,19 +114,15 @@ export const ModularViewProvider = (props: ModularViewProps) => {
 
   // A recursive function to convert the modular view data model into elements.
   const renderView = (
-    view: View | ReactNode | undefined,
+    view: View | ReactElement | undefined,
     parentOrientation?: DividerOrientation
-  ): ReactNode => {
+  ): ReactElement | null => {
     if (!view) {
       return null;
     }
 
     if (React.isValidElement(view)) {
       return view;
-    }
-
-    if (!(view as View).child1 && !(view as View).child2) {
-      return <Divider id={(view as View).id} />;
     }
 
     return (
@@ -153,6 +150,7 @@ export const ModularViewProvider = (props: ModularViewProps) => {
     const droppableItems = document.querySelectorAll(".droppable");
 
     droppableItems.forEach((droppable) => {
+      // Prevent dragover event default to allow 'ondrop' event to run.
       (droppable as HTMLElement).ondragover = (e) => {
         e.preventDefault();
       };
@@ -163,16 +161,27 @@ export const ModularViewProvider = (props: ModularViewProps) => {
         const divider = getDivider(e.target as HTMLElement | null);
 
         if (divider) {
+          const bgColour = {
+            r: Math.random() * 255,
+            g: Math.random() * 255,
+            b: Math.random() * 255,
+          };
+
+          // Calculate best contrast foreground colour using YIQ method.
+          const fgColour =
+            (bgColour.r * 299 + bgColour.g * 587 + bgColour.b * 114) / 1000 >=
+            128
+              ? { r: 0, b: 0, g: 0 }
+              : { r: 255, b: 255, g: 255 };
+
+          // Currently only a set element is added into the view (this will be changed later).
           addChild(
             divider.current.id,
-            <div
-              className="test"
+            <Counter
+              key={uuidV4()}
               style={{
-                backgroundColor: `rgb(
-                                    ${Math.random() * 255},
-                                    ${Math.random() * 255},
-                                    ${Math.random() * 255}
-                                  )`,
+                backgroundColor: `rgb(${bgColour.r}, ${bgColour.g}, ${bgColour.b})`,
+                color: `rgb(${fgColour.r}, ${fgColour.g}, ${fgColour.b})`,
               }}
             />,
             {

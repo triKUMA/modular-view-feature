@@ -12,6 +12,7 @@ function App() {
           Drag Me!
         </div>
       </div>
+
       {renderView(view)}
     </div>
   );

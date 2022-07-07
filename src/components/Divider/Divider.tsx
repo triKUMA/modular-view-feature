@@ -1,11 +1,13 @@
 import "./styles/Divider.css";
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { ReactElement, useEffect, useRef, useState } from "react";
+import DividerChild from "../DividerChild/DividerChild";
+import DividerSlider from "../Slider/DividerSlider";
 
 export type DividerOrientation = "horisontal" | "vertical";
 
 export interface DividerProps {
-  child1?: ReactNode;
-  child2?: ReactNode;
+  child1?: ReactElement | null;
+  child2?: ReactElement | null;
   parentOrientation?: DividerOrientation;
   id: string;
 }
@@ -69,41 +71,30 @@ const Divider = (props: DividerProps) => {
     >
       {/* Child 1 */}
       {props.child1 && (
-        <div
-          className="child droppable"
-          style={{
-            flex: props.child2 ? division : 1,
-          }}
+        <DividerChild
+          division={props.child2 ? division : 1}
           id={props.id + "-1"}
         >
           {props.child1}
-        </div>
+        </DividerChild>
       )}
 
       {/* Slider */}
       {props.child1 && props.child2 && (
-        <div
-          className="slider"
-          style={{
-            height: orientation === "horisontal" ? "100%" : undefined,
-            width: orientation === "vertical" ? "100%" : undefined,
-          }}
-          onMouseDown={() => setAdjustDivision(true)}
-          draggable={false}
+        <DividerSlider
+          orientation={orientation}
+          activateSlider={() => setAdjustDivision(true)}
         />
       )}
 
       {/* Child 2 */}
       {props.child2 && (
-        <div
-          className="child droppable"
-          style={{
-            flex: props.child1 ? 1 - division : 1,
-          }}
+        <DividerChild
+          division={props.child1 ? 1 - division : 1}
           id={props.id + "-2"}
         >
           {props.child2}
-        </div>
+        </DividerChild>
       )}
     </div>
   );
