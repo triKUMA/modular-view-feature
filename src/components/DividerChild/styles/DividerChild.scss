@@ -1,0 +1,27 @@
+.divider-child {
+  position: relative;
+
+  .actions-wrapper {
+    $spacing: 0.5rem;
+
+    display: flex;
+    position: absolute;
+    top: $spacing;
+    right: $spacing;
+    background-color: rgba(black, 0.5);
+    border-radius: 0.25rem;
+
+    & > * {
+      box-sizing: content-box;
+      $size: 1.5rem;
+      width: $size;
+      height: $size;
+      color: grey;
+      padding: 0.25rem;
+
+      &:hover {
+        color: white;
+      }
+    }
+  }
+}

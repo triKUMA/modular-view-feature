@@ -48,6 +48,12 @@ const Divider = (props: DividerProps) => {
     setOrientation(getOrientation()); // eslint-disable-next-line
   }, [props.parentOrientation]);
 
+  useEffect(() => {
+    document.addEventListener("mouseup", () => {
+      setAdjustDivision(false);
+    });
+  }, []);
+
   return (
     <div
       className="divider droppable"
@@ -60,12 +66,6 @@ const Divider = (props: DividerProps) => {
         if (adjustDivision) {
           setDivison(calculateDivision(e));
         }
-      }}
-      onMouseUp={() => {
-        setAdjustDivision(false);
-      }}
-      onMouseLeave={() => {
-        setAdjustDivision(false);
       }}
       id={props.id}
     >

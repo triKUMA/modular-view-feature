@@ -1,1 +1,21 @@
-/*# sourceMappingURL=DividerChild.css.map */
+.divider-child {
+  position: relative;
+}
+.divider-child .actions-wrapper {
+  display: flex;
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 0.25rem;
+}
+.divider-child .actions-wrapper > * {
+  box-sizing: content-box;
+  width: 1.5rem;
+  height: 1.5rem;
+  color: grey;
+  padding: 0.25rem;
+}
+.divider-child .actions-wrapper > *:hover {
+  color: white;
+}/*# sourceMappingURL=DividerChild.css.map */

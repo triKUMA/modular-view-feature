@@ -9,6 +9,7 @@ interface View {
   orientation?: DividerOrientation;
   child1?: View | ReactElement;
   child2?: View | ReactElement;
+  parent?: View;
 }
 
 interface AddChildDetails {
@@ -26,12 +27,14 @@ interface IModularViewContext {
     element: ReactElement,
     details?: AddChildDetails
   ) => void;
+  removeChild: (element: HTMLElement) => void;
 }
 
 export const ModularViewContext = createContext<IModularViewContext>({
   view: { id: "" },
   renderView: () => null,
   addChild: () => {},
+  removeChild: () => {},
 });
 
 interface ModularViewProps {
@@ -61,7 +64,7 @@ export const ModularViewProvider = (props: ModularViewProps) => {
   // matching id.
   const findDivider = (
     dividerID: string,
-    view: View | ReactElement | null
+    view: View | ReactElement | undefined
   ): View | null => {
     if (!view || React.isValidElement(view)) {
       return null;
@@ -71,10 +74,10 @@ export const ModularViewProvider = (props: ModularViewProps) => {
       return view as View;
     }
 
-    const child1 = (view as View).child1 || null;
-    const child2 = (view as View).child2 || null;
-
-    return findDivider(dividerID, child1) || findDivider(dividerID, child2);
+    return (
+      findDivider(dividerID, (view as View).child1) ||
+      findDivider(dividerID, (view as View).child2)
+    );
   };
 
   // Add a child element to a divider, creating a new split if necessary.
@@ -88,10 +91,14 @@ export const ModularViewProvider = (props: ModularViewProps) => {
     if (!divider) return;
 
     if (!divider.child1) {
+      // Place element in empty child1 slot.
       divider.child1 = element;
     } else if (!divider.child2) {
+      // Place element in empty child2 slot.
       divider.child2 = element;
     } else {
+      // Both child1 and child2 are occupied, place the hovered child inside a new divider, and place
+      // the element inside the new divider's other child slot.
       const child = details?.child || "2";
 
       if (child === "2") {
@@ -99,17 +106,114 @@ export const ModularViewProvider = (props: ModularViewProps) => {
           id: uuidV4(),
           child1: divider.child2,
           child2: element,
+          parent: divider,
         };
       } else {
         divider.child1 = {
           id: uuidV4(),
           child1: divider.child1,
           child2: element,
+          parent: divider,
         };
       }
     }
 
     setView({ ...view });
+  };
+
+  const cleanseView = (view: View) => {
+    if (view.child1 && !React.isValidElement(view.child1)) {
+      const subView = view.child1;
+      if (!subView.child1 && !subView.child2) {
+        view.child1 = undefined;
+      } else if (subView.child1 && !subView.child2) {
+        view.child1 = subView.child1;
+
+        if (!React.isValidElement(view.child1)) {
+          view.child1.parent = view;
+        }
+      } else if (subView.child2 && !subView.child1) {
+        view.child1 = subView.child2;
+
+        if (!React.isValidElement(view.child1)) {
+          view.child1.parent = view;
+        }
+      } else if (!view.child2 && subView.child1 && subView.child2) {
+        view.child1 = subView.child1;
+        view.child2 = subView.child2;
+
+        if (!React.isValidElement(view.child1)) {
+          view.child1.parent = view;
+        }
+
+        if (!React.isValidElement(view.child2)) {
+          view.child2.parent = view;
+        }
+      }
+    }
+
+    if (view.child2 && !React.isValidElement(view.child2)) {
+      const subView = view.child2;
+      if (!subView.child1 && !subView.child2) {
+        view.child2 = undefined;
+      } else if (subView.child1 && !subView.child2) {
+        view.child2 = subView.child1;
+
+        if (!React.isValidElement(view.child2)) {
+          view.child2.parent = view;
+        }
+      } else if (subView.child2 && !subView.child1) {
+        view.child2 = subView.child2;
+
+        if (!React.isValidElement(view.child2)) {
+          view.child2.parent = view;
+        }
+      } else if (!view.child1 && subView.child1 && subView.child2) {
+        view.child1 = subView.child1;
+        view.child2 = subView.child2;
+
+        if (!React.isValidElement(view.child1)) {
+          view.child1.parent = view;
+        }
+
+        if (!React.isValidElement(view.child2)) {
+          view.child2.parent = view;
+        }
+      }
+    }
+
+    if (!view.parent) return;
+
+    cleanseView(view.parent);
+  };
+
+  const removeChild = (element: HTMLElement) => {
+    const divider = getDivider(element);
+
+    if (divider) {
+      let dividerData = findDivider(divider.current.id, view);
+
+      if (dividerData) {
+        const child = divider.child?.id.substring(
+          divider.child?.id.length - 1
+        ) as "1" | "2" | undefined;
+
+        switch (child) {
+          case "1":
+            dividerData.child1 = undefined;
+            cleanseView(dividerData);
+            setView({ ...view });
+            break;
+
+          case "2":
+            dividerData.child2 = undefined;
+            cleanseView(dividerData);
+            setView({ ...view });
+
+            break;
+        }
+      }
+    }
   };
 
   // A recursive function to convert the modular view data model into elements.
@@ -178,16 +282,16 @@ export const ModularViewProvider = (props: ModularViewProps) => {
           addChild(
             divider.current.id,
             <Counter
-              key={uuidV4()}
               style={{
                 backgroundColor: `rgb(${bgColour.r}, ${bgColour.g}, ${bgColour.b})`,
                 color: `rgb(${fgColour.r}, ${fgColour.g}, ${fgColour.b})`,
               }}
+              key={uuidV4()}
             />,
             {
               child: divider.child?.id.substring(
                 divider.child?.id.length - 1
-              ) as "1" | "2",
+              ) as "1" | "2" | undefined,
             }
           );
         }
@@ -201,7 +305,9 @@ export const ModularViewProvider = (props: ModularViewProps) => {
   }, [view]);
 
   return (
-    <ModularViewContext.Provider value={{ view, renderView, addChild }}>
+    <ModularViewContext.Provider
+      value={{ view, renderView, addChild, removeChild }}
+    >
       {props.children}
     </ModularViewContext.Provider>
   );

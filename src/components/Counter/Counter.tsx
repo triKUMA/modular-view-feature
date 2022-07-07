@@ -4,7 +4,6 @@ import { CSSProperties, useState } from "react";
 
 interface CounterProps {
   style?: CSSProperties;
-  key: string;
 }
 
 const Counter = (props: CounterProps) => {
@@ -15,7 +14,6 @@ const Counter = (props: CounterProps) => {
       className="counter"
       onClick={() => setCounter(counter + 1)}
       style={props.style}
-      key={props.key}
     >
       {counter}
     </div>
