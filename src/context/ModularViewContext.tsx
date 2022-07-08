@@ -119,48 +119,58 @@ export const ModularViewProvider = (props: ModularViewProps) => {
     }
   };
 
+  // Clean up the view when an item is removed or moved. Runs recursively until nothing can be
+  // cleaned up.
   const cleanseView = (view: View) => {
     let modifiedSelf = false;
 
     if (view.child1 && !React.isValidElement(view.child1)) {
+      // Assume we have modified the current view by default.
+      modifiedSelf = true;
       const subView = view.child1;
       if (!subView.child1 && !subView.child2) {
         view.child1 = undefined;
-        modifiedSelf = true;
       } else if (subView.child1 && !subView.child2) {
         view.child1 = subView.child1;
-        modifiedSelf = true;
       } else if (subView.child2 && !subView.child1) {
         view.child1 = subView.child2;
-        modifiedSelf = true;
       } else if (!view.child2 && subView.child1 && subView.child2) {
         view.child1 = subView.child1;
         view.child2 = subView.child2;
-        modifiedSelf = true;
+      } else {
+        // We can now confirm we have not modified the current view, as all otehr cases have failed,
+        // so we can turn off the flag.
+        modifiedSelf = false;
       }
     }
 
     if (view.child2 && !React.isValidElement(view.child2)) {
+      // Assume we have modified the current view by default.
+      modifiedSelf = true;
       const subView = view.child2;
       if (!subView.child1 && !subView.child2) {
         view.child2 = undefined;
-        modifiedSelf = true;
       } else if (subView.child1 && !subView.child2) {
         view.child2 = subView.child1;
-        modifiedSelf = true;
       } else if (subView.child2 && !subView.child1) {
         view.child2 = subView.child2;
-        modifiedSelf = true;
       } else if (!view.child1 && subView.child1 && subView.child2) {
         view.child1 = subView.child1;
         view.child2 = subView.child2;
-        modifiedSelf = true;
+      } else {
+        // We can now confirm we have not modified the current view, as all other cases have failed,
+        // so we can turn off the flag.
+        modifiedSelf = false;
       }
     }
 
     if (modifiedSelf) {
+      // If the view has modified its own properties, there could be cleaning up that needs to happen
+      // with its new children. Rerun cleansing on the same view.
       cleanseView(view);
     } else {
+      // The current view has not modified itself, meaning that it is safe to move on to cleaning
+      // the children (only if they are also views).
       if (view.child1 && !React.isValidElement(view.child1))
         cleanseView(view.child1);
       if (view.child2 && !React.isValidElement(view.child2))
@@ -168,6 +178,7 @@ export const ModularViewProvider = (props: ModularViewProps) => {
     }
   };
 
+  // Remove a child from the view. View will be cleansed after element is removed.
   const removeChild = (element: HTMLElement) => {
     const divider = getDivider(element);
 
@@ -175,6 +186,8 @@ export const ModularViewProvider = (props: ModularViewProps) => {
       setView((view) => {
         let dividerData = findDivider(divider.current.id, view);
 
+        // If we have found the parent divider element of the element we are tring to remove,
+        // determine which of the two children the element is, and then remove it.
         if (dividerData) {
           const child = divider.child?.id.substring(
             divider.child?.id.length - 1
@@ -193,6 +206,7 @@ export const ModularViewProvider = (props: ModularViewProps) => {
         }
       });
 
+      // Cleanse the view after removal, to make sure the data model is as lean as possible.
       setView((view) => {
         cleanseView(view);
       });
