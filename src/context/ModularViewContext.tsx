@@ -10,6 +10,7 @@ interface View {
   orientation: DividerOrientation;
   child1?: View | ReactElement;
   child2?: View | ReactElement;
+  depth: number;
 }
 
 interface AddChildDetails {
@@ -33,7 +34,7 @@ interface IModularViewContext {
 }
 
 export const ModularViewContext = createContext<IModularViewContext>({
-  view: { id: "", orientation: "horisontal" },
+  view: { id: "", orientation: "horisontal", depth: 0 },
   renderView: () => null,
   addChild: () => {},
   removeChild: () => {},
@@ -41,6 +42,7 @@ export const ModularViewContext = createContext<IModularViewContext>({
 });
 
 interface ModularViewProps {
+  maxDepth?: number;
   children: ReactElement;
 }
 
@@ -62,6 +64,7 @@ export const ModularViewProvider = (props: ModularViewProps) => {
   const [view, setView] = useImmer<View>({
     id: uuidV4(),
     orientation: "horisontal",
+    depth: 0,
   });
 
   // A recursive function to search through the modular view data model and find a divider with a
@@ -113,6 +116,14 @@ export const ModularViewProvider = (props: ModularViewProps) => {
       // Place element in empty child2 slot.
       divider.child2 = element;
     } else {
+      // If we hav hit the max allowed depth of the view, do not add new elements into the view.
+      if (
+        typeof props.maxDepth !== "undefined" &&
+        divider.depth + 1 > props.maxDepth
+      ) {
+        return;
+      }
+
       // Both child1 and child2 are occupied, place the hovered child inside a new divider, and place
       // the element inside the new divider's other child slot.
       const child = details?.child || "2";
@@ -124,6 +135,7 @@ export const ModularViewProvider = (props: ModularViewProps) => {
             divider.orientation === "horisontal" ? "vertical" : "horisontal",
           child1: divider.child2,
           child2: element,
+          depth: divider.depth + 1,
         };
       } else {
         divider.child1 = {
@@ -132,6 +144,7 @@ export const ModularViewProvider = (props: ModularViewProps) => {
             divider.orientation === "horisontal" ? "vertical" : "horisontal",
           child1: divider.child1,
           child2: element,
+          depth: divider.depth + 1,
         };
       }
     }
