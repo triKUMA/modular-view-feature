@@ -2,6 +2,7 @@ import React, { createContext, ReactElement, useEffect, useState } from "react";
 import Divider, { DividerOrientation } from "../components/Divider/Divider";
 import { v4 as uuidV4 } from "uuid";
 import Counter from "../components/Counter/Counter";
+import { useImmer } from "use-immer";
 
 // The base data model of the modular view.
 interface View {
@@ -9,7 +10,6 @@ interface View {
   orientation?: DividerOrientation;
   child1?: View | ReactElement;
   child2?: View | ReactElement;
-  parent?: View;
 }
 
 interface AddChildDetails {
@@ -23,6 +23,7 @@ interface IModularViewContext {
     parentOrientation?: DividerOrientation
   ) => ReactElement | null;
   addChild: (
+    view: View,
     dividerID: string,
     element: ReactElement,
     details?: AddChildDetails
@@ -56,7 +57,7 @@ export const getDivider = (
 };
 
 export const ModularViewProvider = (props: ModularViewProps) => {
-  const [view, setView] = useState<View>({
+  const [view, setView] = useImmer<View>({
     id: uuidV4(),
   });
 
@@ -82,6 +83,7 @@ export const ModularViewProvider = (props: ModularViewProps) => {
 
   // Add a child element to a divider, creating a new split if necessary.
   const addChild = (
+    view: View,
     dividerID: string,
     element: ReactElement,
     details?: AddChildDetails
@@ -106,49 +108,35 @@ export const ModularViewProvider = (props: ModularViewProps) => {
           id: uuidV4(),
           child1: divider.child2,
           child2: element,
-          parent: divider,
         };
       } else {
         divider.child1 = {
           id: uuidV4(),
           child1: divider.child1,
           child2: element,
-          parent: divider,
         };
       }
     }
-
-    setView({ ...view });
   };
 
   const cleanseView = (view: View) => {
+    let modifiedSelf = false;
+
     if (view.child1 && !React.isValidElement(view.child1)) {
       const subView = view.child1;
       if (!subView.child1 && !subView.child2) {
         view.child1 = undefined;
+        modifiedSelf = true;
       } else if (subView.child1 && !subView.child2) {
         view.child1 = subView.child1;
-
-        if (!React.isValidElement(view.child1)) {
-          view.child1.parent = view;
-        }
+        modifiedSelf = true;
       } else if (subView.child2 && !subView.child1) {
         view.child1 = subView.child2;
-
-        if (!React.isValidElement(view.child1)) {
-          view.child1.parent = view;
-        }
+        modifiedSelf = true;
       } else if (!view.child2 && subView.child1 && subView.child2) {
         view.child1 = subView.child1;
         view.child2 = subView.child2;
-
-        if (!React.isValidElement(view.child1)) {
-          view.child1.parent = view;
-        }
-
-        if (!React.isValidElement(view.child2)) {
-          view.child2.parent = view;
-        }
+        modifiedSelf = true;
       }
     }
 
@@ -156,63 +144,58 @@ export const ModularViewProvider = (props: ModularViewProps) => {
       const subView = view.child2;
       if (!subView.child1 && !subView.child2) {
         view.child2 = undefined;
+        modifiedSelf = true;
       } else if (subView.child1 && !subView.child2) {
         view.child2 = subView.child1;
-
-        if (!React.isValidElement(view.child2)) {
-          view.child2.parent = view;
-        }
+        modifiedSelf = true;
       } else if (subView.child2 && !subView.child1) {
         view.child2 = subView.child2;
-
-        if (!React.isValidElement(view.child2)) {
-          view.child2.parent = view;
-        }
+        modifiedSelf = true;
       } else if (!view.child1 && subView.child1 && subView.child2) {
         view.child1 = subView.child1;
         view.child2 = subView.child2;
-
-        if (!React.isValidElement(view.child1)) {
-          view.child1.parent = view;
-        }
-
-        if (!React.isValidElement(view.child2)) {
-          view.child2.parent = view;
-        }
+        modifiedSelf = true;
       }
     }
 
-    if (!view.parent) return;
-
-    cleanseView(view.parent);
+    if (modifiedSelf) {
+      cleanseView(view);
+    } else {
+      if (view.child1 && !React.isValidElement(view.child1))
+        cleanseView(view.child1);
+      if (view.child2 && !React.isValidElement(view.child2))
+        cleanseView(view.child2);
+    }
   };
 
   const removeChild = (element: HTMLElement) => {
     const divider = getDivider(element);
 
     if (divider) {
-      let dividerData = findDivider(divider.current.id, view);
+      setView((view) => {
+        let dividerData = findDivider(divider.current.id, view);
 
-      if (dividerData) {
-        const child = divider.child?.id.substring(
-          divider.child?.id.length - 1
-        ) as "1" | "2" | undefined;
+        if (dividerData) {
+          const child = divider.child?.id.substring(
+            divider.child?.id.length - 1
+          ) as "1" | "2" | undefined;
 
-        switch (child) {
-          case "1":
-            dividerData.child1 = undefined;
-            cleanseView(dividerData);
-            setView({ ...view });
-            break;
+          switch (child) {
+            case "1":
+              dividerData.child1 = undefined;
+              break;
 
-          case "2":
-            dividerData.child2 = undefined;
-            cleanseView(dividerData);
-            setView({ ...view });
+            case "2":
+              dividerData.child2 = undefined;
 
-            break;
+              break;
+          }
         }
-      }
+      });
+
+      setView((view) => {
+        cleanseView(view);
+      });
     }
   };
 
@@ -279,21 +262,24 @@ export const ModularViewProvider = (props: ModularViewProps) => {
               : { r: 255, b: 255, g: 255 };
 
           // Currently only a set element is added into the view (this will be changed later).
-          addChild(
-            divider.current.id,
-            <Counter
-              style={{
-                backgroundColor: `rgb(${bgColour.r}, ${bgColour.g}, ${bgColour.b})`,
-                color: `rgb(${fgColour.r}, ${fgColour.g}, ${fgColour.b})`,
-              }}
-              key={uuidV4()}
-            />,
-            {
-              child: divider.child?.id.substring(
-                divider.child?.id.length - 1
-              ) as "1" | "2" | undefined,
-            }
-          );
+          setView((view) => {
+            addChild(
+              view,
+              divider.current.id,
+              <Counter
+                style={{
+                  backgroundColor: `rgb(${bgColour.r}, ${bgColour.g}, ${bgColour.b})`,
+                  color: `rgb(${fgColour.r}, ${fgColour.g}, ${fgColour.b})`,
+                }}
+                key={uuidV4()}
+              />,
+              {
+                child: divider.child?.id.substring(
+                  divider.child?.id.length - 1
+                ) as "1" | "2" | undefined,
+              }
+            );
+          });
         }
       };
     });
