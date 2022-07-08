@@ -1,32 +1,25 @@
 import "./styles/Divider.css";
-import { ReactElement, useEffect, useRef, useState } from "react";
+import { ReactElement, useContext, useEffect, useRef, useState } from "react";
 import DividerChild from "../DividerChild/DividerChild";
 import DividerSlider from "../Slider/DividerSlider";
+import { ModularViewContext } from "../../context/ModularViewContext";
 
 export type DividerOrientation = "horisontal" | "vertical";
 
 export interface DividerProps {
   child1?: ReactElement | null;
   child2?: ReactElement | null;
-  parentOrientation?: DividerOrientation;
+  orientation: DividerOrientation;
   id: string;
 }
 
 const Divider = (props: DividerProps) => {
-  const getOrientation = (): DividerOrientation => {
-    if (!props.parentOrientation) {
-      return "horisontal";
-    }
+  const { rotateDivider } = useContext(ModularViewContext);
 
-    return props.parentOrientation === "horisontal" ? "vertical" : "horisontal";
-  };
-
-  const divider = useRef<HTMLDivElement>(null);
-  const [orientation, setOrientation] = useState<"horisontal" | "vertical">(
-    getOrientation()
-  );
   const [division, setDivison] = useState(0.5);
   const [adjustDivision, setAdjustDivision] = useState(false);
+
+  const divider = useRef<HTMLDivElement>(null);
 
   const calculateDivision = (
     e: MouseEvent | React.MouseEvent<HTMLDivElement, MouseEvent>
@@ -36,17 +29,13 @@ const Divider = (props: DividerProps) => {
     if (divider.current) {
       const dividerRect = divider.current.getBoundingClientRect();
       newDivision =
-        orientation === "horisontal"
+        props.orientation === "horisontal"
           ? (e.pageX - dividerRect.left) / dividerRect.width
           : (e.pageY - dividerRect.top) / dividerRect.height;
     }
 
     return newDivision;
   };
-
-  useEffect(() => {
-    setOrientation(getOrientation()); // eslint-disable-next-line
-  }, [props.parentOrientation]);
 
   useEffect(() => {
     document.addEventListener("mouseup", () => {
@@ -59,7 +48,7 @@ const Divider = (props: DividerProps) => {
       className="divider droppable"
       style={{
         display: "flex",
-        flexDirection: orientation === "horisontal" ? "row" : "column",
+        flexDirection: props.orientation === "horisontal" ? "row" : "column",
       }}
       ref={divider}
       onMouseMove={(e) => {
@@ -82,8 +71,9 @@ const Divider = (props: DividerProps) => {
       {/* Slider */}
       {props.child1 && props.child2 && (
         <DividerSlider
-          orientation={orientation}
+          orientation={props.orientation}
           activateSlider={() => setAdjustDivision(true)}
+          toggleOrientation={() => rotateDivider(divider.current?.id || "")}
         />
       )}
 

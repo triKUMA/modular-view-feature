@@ -1,4 +1,4 @@
-import React, { createContext, ReactElement, useEffect, useState } from "react";
+import React, { createContext, ReactElement, useEffect } from "react";
 import Divider, { DividerOrientation } from "../components/Divider/Divider";
 import { v4 as uuidV4 } from "uuid";
 import Counter from "../components/Counter/Counter";
@@ -7,7 +7,7 @@ import { useImmer } from "use-immer";
 // The base data model of the modular view.
 interface View {
   id: string;
-  orientation?: DividerOrientation;
+  orientation: DividerOrientation;
   child1?: View | ReactElement;
   child2?: View | ReactElement;
 }
@@ -29,13 +29,15 @@ interface IModularViewContext {
     details?: AddChildDetails
   ) => void;
   removeChild: (element: HTMLElement) => void;
+  rotateDivider: (dividerID: string) => void;
 }
 
 export const ModularViewContext = createContext<IModularViewContext>({
-  view: { id: "" },
+  view: { id: "", orientation: "horisontal" },
   renderView: () => null,
   addChild: () => {},
   removeChild: () => {},
+  rotateDivider: () => {},
 });
 
 interface ModularViewProps {
@@ -59,6 +61,7 @@ export const getDivider = (
 export const ModularViewProvider = (props: ModularViewProps) => {
   const [view, setView] = useImmer<View>({
     id: uuidV4(),
+    orientation: "horisontal",
   });
 
   // A recursive function to search through the modular view data model and find a divider with a
@@ -79,6 +82,17 @@ export const ModularViewProvider = (props: ModularViewProps) => {
       findDivider(dividerID, (view as View).child1) ||
       findDivider(dividerID, (view as View).child2)
     );
+  };
+
+  const rotateDivider = (dividerID: string) => {
+    setView((view) => {
+      const divider = findDivider(dividerID, view);
+
+      if (divider) {
+        divider.orientation =
+          divider.orientation === "horisontal" ? "vertical" : "horisontal";
+      }
+    });
   };
 
   // Add a child element to a divider, creating a new split if necessary.
@@ -106,12 +120,16 @@ export const ModularViewProvider = (props: ModularViewProps) => {
       if (child === "2") {
         divider.child2 = {
           id: uuidV4(),
+          orientation:
+            divider.orientation === "horisontal" ? "vertical" : "horisontal",
           child1: divider.child2,
           child2: element,
         };
       } else {
         divider.child1 = {
           id: uuidV4(),
+          orientation:
+            divider.orientation === "horisontal" ? "vertical" : "horisontal",
           child1: divider.child1,
           child2: element,
         };
@@ -215,8 +233,7 @@ export const ModularViewProvider = (props: ModularViewProps) => {
 
   // A recursive function to convert the modular view data model into elements.
   const renderView = (
-    view: View | ReactElement | undefined,
-    parentOrientation?: DividerOrientation
+    view: View | ReactElement | undefined
   ): ReactElement | null => {
     if (!view) {
       return null;
@@ -228,20 +245,10 @@ export const ModularViewProvider = (props: ModularViewProps) => {
 
     return (
       <Divider
-        child1={renderView(
-          (view as View).child1,
-          (view as View).orientation || parentOrientation === "horisontal"
-            ? "vertical"
-            : "horisontal"
-        )}
-        child2={renderView(
-          (view as View).child2,
-          (view as View).orientation || parentOrientation === "horisontal"
-            ? "vertical"
-            : "horisontal"
-        )}
-        parentOrientation={parentOrientation}
         id={(view as View).id}
+        orientation={(view as View).orientation}
+        child1={renderView((view as View).child1)}
+        child2={renderView((view as View).child2)}
       />
     );
   };
@@ -306,7 +313,7 @@ export const ModularViewProvider = (props: ModularViewProps) => {
 
   return (
     <ModularViewContext.Provider
-      value={{ view, renderView, addChild, removeChild }}
+      value={{ view, renderView, addChild, removeChild, rotateDivider }}
     >
       {props.children}
     </ModularViewContext.Provider>

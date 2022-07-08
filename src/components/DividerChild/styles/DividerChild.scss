@@ -12,12 +12,11 @@
     border-radius: 0.25rem;
 
     & > * {
-      box-sizing: content-box;
       $size: 1.5rem;
       width: $size;
       height: $size;
-      color: grey;
-      padding: 0.25rem;
+      color: lightgrey;
+      padding: 0.1rem;
 
       &:hover {
         color: white;

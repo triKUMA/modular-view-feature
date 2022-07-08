@@ -10,11 +10,10 @@
   border-radius: 0.25rem;
 }
 .divider-child .actions-wrapper > * {
-  box-sizing: content-box;
   width: 1.5rem;
   height: 1.5rem;
-  color: grey;
-  padding: 0.25rem;
+  color: lightgrey;
+  padding: 0.1rem;
 }
 .divider-child .actions-wrapper > *:hover {
   color: white;

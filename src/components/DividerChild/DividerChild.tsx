@@ -3,7 +3,6 @@ import "./styles/DividerChild.css";
 import { TiDelete } from "react-icons/ti";
 import Divider from "../Divider/Divider";
 import {
-  getDivider,
   ModularViewContext,
 } from "../../context/ModularViewContext";
 

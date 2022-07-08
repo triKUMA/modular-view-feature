@@ -4,8 +4,29 @@
   background-color: rgba(black, 0.1);
   width: var(--split-size);
   height: var(--split-size);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   &:hover {
     background-color: rgba(black, 0.25);
+  }
+
+  .rotate-divider {
+    position: absolute;
+    background-color: rgba(black, 0.5);
+    border-radius: 0.25rem;
+    z-index: 2;
+    cursor: pointer;
+    $size: 1.5rem;
+    width: $size;
+    height: $size;
+    color: lightgrey;
+    padding: 0.1rem;
+
+    &:hover {
+      color: white;
+    }
   }
 }

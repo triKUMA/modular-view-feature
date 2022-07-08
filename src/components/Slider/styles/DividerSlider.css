@@ -3,7 +3,25 @@
   background-color: rgba(0, 0, 0, 0.1);
   width: var(--split-size);
   height: var(--split-size);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .divider-slider:hover {
   background-color: rgba(0, 0, 0, 0.25);
+}
+.divider-slider .rotate-divider {
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 0.25rem;
+  z-index: 2;
+  cursor: pointer;
+  width: 1.5rem;
+  height: 1.5rem;
+  color: lightgrey;
+  padding: 0.1rem;
+}
+.divider-slider .rotate-divider:hover {
+  color: white;
 }/*# sourceMappingURL=DividerSlider.css.map */
