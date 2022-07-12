@@ -1,23 +1,32 @@
 import { DividerOrientation } from "../Divider/Divider";
 import "./styles/DividerSlider.css";
 import { BiRefresh } from "react-icons/bi";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface DividerSliderProps {
   orientation: DividerOrientation;
-  activateSlider: () => void;
+  slider: { active: boolean; activate: () => void };
   toggleOrientation: () => void;
 }
 
 const DividerSlider = (props: DividerSliderProps) => {
   const [mouseOver, setMouseOver] = useState(false);
 
+  useEffect(() => {
+    if (props.slider.active) {
+      document.body.style.cursor =
+        props.orientation === "horisontal" ? "w-resize" : "n-resize";
+    } else {
+      document.body.style.cursor = "";
+    }
+  }, [props.slider.active]);
+
   return (
     <div
       className="divider-slider"
       onMouseDown={(e) => {
         if ((e.target as HTMLElement).classList.contains("divider-slider")) {
-          props.activateSlider();
+          props.slider.activate();
         }
       }}
       style={{
@@ -29,13 +38,17 @@ const DividerSlider = (props: DividerSliderProps) => {
       onMouseEnter={() => setMouseOver(true)}
       onMouseLeave={() => setMouseOver(false)}
     >
-      {mouseOver && (
+      {!props.slider.active && mouseOver && (
         <BiRefresh
           className="rotate-divider"
+          onMouseDown={(e) => {
+            e.stopPropagation();
+          }}
           onClick={(e) => {
             e.stopPropagation();
             props.toggleOrientation();
           }}
+          title="Rotate view"
         />
       )}
     </div>

@@ -2,13 +2,11 @@ import { ReactElement, useState, useEffect, useContext } from "react";
 import "./styles/DividerChild.css";
 import { TiDelete } from "react-icons/ti";
 import Divider from "../Divider/Divider";
-import {
-  ModularViewContext,
-} from "../../context/ModularViewContext";
+import { ModularViewContext } from "../../context/ModularViewContext";
 
 interface DividerChildProps {
   children: ReactElement;
-  division: number;
+  division: { value: number; active: boolean };
   id: string;
 }
 
@@ -26,7 +24,7 @@ const DividerChild = (props: DividerChildProps) => {
     <div
       className="divider-child droppable"
       style={{
-        flex: props.division,
+        flex: props.division.value,
       }}
       id={props.id}
       onMouseEnter={(e) => {
@@ -38,12 +36,13 @@ const DividerChild = (props: DividerChildProps) => {
     >
       {props.children}
 
-      {displayActions && (
+      {displayActions && !props.division.active && (
         <div className="actions-wrapper">
           <TiDelete
             onClick={(e) => {
               removeChild(e.target as HTMLElement);
             }}
+            title="Remove element"
           />
         </div>
       )}

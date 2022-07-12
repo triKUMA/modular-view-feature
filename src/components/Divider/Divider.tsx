@@ -61,7 +61,10 @@ const Divider = (props: DividerProps) => {
       {/* Child 1 */}
       {props.child1 && (
         <DividerChild
-          division={props.child2 ? division : 1}
+          division={{
+            value: props.child2 ? division : 1,
+            active: adjustDivision,
+          }}
           id={props.id + "-1"}
         >
           {props.child1}
@@ -72,7 +75,10 @@ const Divider = (props: DividerProps) => {
       {props.child1 && props.child2 && (
         <DividerSlider
           orientation={props.orientation}
-          activateSlider={() => setAdjustDivision(true)}
+          slider={{
+            active: adjustDivision,
+            activate: () => setAdjustDivision(true),
+          }}
           toggleOrientation={() => rotateDivider(divider.current?.id || "")}
         />
       )}
@@ -80,7 +86,10 @@ const Divider = (props: DividerProps) => {
       {/* Child 2 */}
       {props.child2 && (
         <DividerChild
-          division={props.child1 ? 1 - division : 1}
+          division={{
+            value: props.child1 ? 1 - division : 1,
+            active: adjustDivision,
+          }}
           id={props.id + "-2"}
         >
           {props.child2}

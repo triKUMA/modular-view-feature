@@ -89,13 +89,25 @@ export const ModularViewProvider = (props: ModularViewProps) => {
 
   const rotateDivider = (dividerID: string) => {
     setView((view) => {
-      const divider = findDivider(dividerID, view);
-
-      if (divider) {
-        divider.orientation =
-          divider.orientation === "horisontal" ? "vertical" : "horisontal";
-      }
+      rotateDividerRecursive(dividerID, view);
     });
+  };
+
+  const rotateDividerRecursive = (dividerID: string, view: View) => {
+    const divider = findDivider(dividerID, view);
+
+    if (divider) {
+      divider.orientation =
+        divider.orientation === "horisontal" ? "vertical" : "horisontal";
+
+      if (divider.child1 && !React.isValidElement(divider.child1)) {
+        rotateDividerRecursive(divider.child1.id, view);
+      }
+
+      if (divider.child2 && !React.isValidElement(divider.child2)) {
+        rotateDividerRecursive(divider.child2.id, view);
+      }
+    }
   };
 
   // Add a child element to a divider, creating a new split if necessary.
@@ -156,51 +168,47 @@ export const ModularViewProvider = (props: ModularViewProps) => {
     let modifiedSelf = false;
 
     if (view.child1 && !React.isValidElement(view.child1)) {
-      // Assume we have modified the current view by default.
-      modifiedSelf = true;
       const subView = view.child1;
       if (!subView.child1 && !subView.child2) {
         view.child1 = undefined;
+        modifiedSelf = true;
       } else if (subView.child1 && !subView.child2) {
         view.child1 = subView.child1;
+        modifiedSelf = true;
       } else if (subView.child2 && !subView.child1) {
         view.child1 = subView.child2;
+        modifiedSelf = true;
       } else if (!view.child2 && subView.child1 && subView.child2) {
         view.child1 = subView.child1;
         view.child2 = subView.child2;
-      } else {
-        // We can now confirm we have not modified the current view, as all otehr cases have failed,
-        // so we can turn off the flag.
-        modifiedSelf = false;
+        modifiedSelf = true;
       }
     }
 
     if (view.child2 && !React.isValidElement(view.child2)) {
-      // Assume we have modified the current view by default.
-      modifiedSelf = true;
       const subView = view.child2;
       if (!subView.child1 && !subView.child2) {
         view.child2 = undefined;
+        modifiedSelf = true;
       } else if (subView.child1 && !subView.child2) {
         view.child2 = subView.child1;
+        modifiedSelf = true;
       } else if (subView.child2 && !subView.child1) {
         view.child2 = subView.child2;
+        modifiedSelf = true;
       } else if (!view.child1 && subView.child1 && subView.child2) {
         view.child1 = subView.child1;
         view.child2 = subView.child2;
-      } else {
-        // We can now confirm we have not modified the current view, as all other cases have failed,
-        // so we can turn off the flag.
-        modifiedSelf = false;
+        modifiedSelf = true;
       }
     }
 
     if (modifiedSelf) {
-      // If the view has modified its own properties, there could be cleaning up that needs to happen
-      // with its new children. Rerun cleansing on the same view.
+      // If the view has modified its own properties, there could be further cleansing that needs to
+      // happen with its new children. Rerun cleansing on the same view.
       cleanseView(view);
     } else {
-      // The current view has not modified itself, meaning that it is safe to move on to cleaning
+      // The current view has not modified itself, meaning that it is safe to move on to cleansing
       // the children (only if they are also views).
       if (view.child1 && !React.isValidElement(view.child1))
         cleanseView(view.child1);
