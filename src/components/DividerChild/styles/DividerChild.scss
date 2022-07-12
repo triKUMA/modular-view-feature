@@ -12,6 +12,7 @@
     border-radius: 0.25rem;
 
     & > * {
+      cursor: pointer;
       $size: 1.5rem;
       width: $size;
       height: $size;
